@@ -11,7 +11,7 @@
     "geonames"
   ],
   "main": [
-    "dist/ng-geonames.min.js"
+    "dist/ng-geonames.js"
   ],
   "ignore": [
     "**/.*",
