@@ -2,7 +2,8 @@ ng-geonames
 =================
 
 Geonames ( http://www.geonames.org )
-Bsed on ui-leaflet directive structure ( https://github.com/angular-ui/ui-leaflet ).
+
+Based on ui-leaflet directive structure ( https://github.com/angular-ui/ui-leaflet ).
 
 <h4>Installing</h4>
 ```
