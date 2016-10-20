@@ -8,7 +8,8 @@
   "description": "",
   "license": "MIT",
   "keywords": [
-    "geonames"
+    "geonames",
+    "angular"
   ],
   "main": [
     "dist/ng-geonames.js"
