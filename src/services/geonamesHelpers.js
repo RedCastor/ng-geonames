@@ -1,7 +1,7 @@
 (function (angular) {
   'use strict';
 
-  angular.module('ngGeonames').service('geonamesHelpers', [ '$q', '$log', '$timeout', function ($q, $log, $timeout) {
+  angular.module('ngGeonames', []).service('geonamesHelpers', [ '$q', '$log', '$timeout', function ($q, $log, $timeout) {
 
     var _errorHeader = '[ng-geonames] ';
 

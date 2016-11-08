@@ -1,7 +1,7 @@
 (function (angular) {
   'use strict';
 
-  angular.module('ngGeonames', []).factory('geonamesService', [ '$log', '$q', '$http', 'geonamesHelpers', 'geonamesDefaults', function ($log, $q, $http, geonamesHelpers, geonamesDefaults) {
+  angular.module('ngGeonames').factory('geonamesService', [ '$log', '$q', '$http', 'geonamesHelpers', 'geonamesDefaults', function ($log, $q, $http, geonamesHelpers, geonamesDefaults) {
     var isDefined = geonamesHelpers.isDefined;
     var isString = angular.isString;
     var egal = geonamesHelpers.equals;

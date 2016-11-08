@@ -1,6 +1,163 @@
 (function(angular) {
     "use strict";
-    angular.module("ngGeonames", []).factory("geonamesService", [ "$log", "$q", "$http", "geonamesHelpers", "geonamesDefaults", function($log, $q, $http, geonamesHelpers, geonamesDefaults) {
+    angular.module("ngGeonames", []).service("geonamesHelpers", [ "$q", "$log", "$timeout", function($q, $log, $timeout) {
+        var _errorHeader = "[ng-geonames] ";
+        var _isString = function(value) {
+            return angular.isString(value) && value !== "";
+        };
+        var _isDefined = function(value) {
+            return angular.isDefined(value) && value !== null;
+        };
+        var _isUndefined = function(value) {
+            return !_isDefined(value);
+        };
+        function _obtainEffectiveGeonamesId(d, geonamesId) {
+            var id, i;
+            if (!angular.isDefined(geonamesId)) {
+                if (Object.keys(d).length === 0) {
+                    id = "main";
+                } else if (Object.keys(d).length >= 1) {
+                    for (i in d) {
+                        if (d.hasOwnProperty(i)) {
+                            id = i;
+                        }
+                    }
+                } else {
+                    $log.error(_errorHeader + "- You have more than 1 geonames on the DOM, you must provide the geonames ID to the geonamesData.getXXX call");
+                }
+            } else {
+                id = geonamesId;
+            }
+            return id;
+        }
+        function _getUnresolvedDefer(d, geonamesId) {
+            var id = _obtainEffectiveGeonamesId(d, geonamesId), defer;
+            if (!angular.isDefined(d[id]) || d[id].resolvedDefer === true) {
+                defer = $q.defer();
+                d[id] = {
+                    defer: defer,
+                    resolvedDefer: false
+                };
+            } else {
+                defer = d[id].defer;
+            }
+            return defer;
+        }
+        return {
+            isTruthy: function(val) {
+                return val === "true" || val === true;
+            },
+            isEmpty: function(value) {
+                return Object.keys(value).length === 0;
+            },
+            isUndefinedOrEmpty: function(value) {
+                return angular.isUndefined(value) || value === null || Object.keys(value).length === 0;
+            },
+            isDefined: _isDefined,
+            isUndefined: _isUndefined,
+            isNumber: angular.isNumber,
+            isString: _isString,
+            isArray: angular.isArray,
+            isObject: angular.isObject,
+            isFunction: angular.isFunction,
+            equals: angular.equals,
+            getUnresolvedDefer: _getUnresolvedDefer,
+            setResolvedDefer: function(d, geonamesId) {
+                var id = _obtainEffectiveGeonamesId(d, geonamesId);
+                d[id].resolvedDefer = true;
+            },
+            obtainEffectiveGeonamesId: _obtainEffectiveGeonamesId
+        };
+    } ]);
+})(window.angular);
+
+(function(angular) {
+    "use strict";
+    angular.module("ngGeonames").factory("geonamesDefaults", [ "$q", "geonamesHelpers", function($q, geonamesHelpers) {
+        function _getDefaults() {
+            return {
+                server: "http://api.geonames.org",
+                maxRows: 50,
+                postalCode: false,
+                country: [],
+                username: "demo"
+            };
+        }
+        var isDefined = geonamesHelpers.isDefined, isObject = geonamesHelpers.isObject, obtainEffectiveGeonamesId = geonamesHelpers.obtainEffectiveGeonamesId, defaults = {};
+        return {
+            reset: function() {
+                defaults = {};
+            },
+            getDefaults: function(scopeId) {
+                var geonamesId = obtainEffectiveGeonamesId(defaults, scopeId);
+                return defaults[geonamesId];
+            },
+            getGeonamesCreationDefaults: function(scopeId) {
+                var geonamesId = obtainEffectiveGeonamesId(defaults, scopeId);
+                var d = defaults[geonamesId];
+                var geonamesDefaults = {
+                    server: d.server,
+                    maxRows: d.maxRows,
+                    postalCode: d.postalCode,
+                    country: d.country,
+                    username: d.username
+                };
+                return geonamesDefaults;
+            },
+            setDefaults: function(userDefaults, scopeId) {
+                var newDefaults = _getDefaults();
+                if (isDefined(userDefaults)) {
+                    newDefaults.server = isDefined(userDefaults.server) ? userDefaults.server : newDefaults.server;
+                    newDefaults.maxRows = isDefined(userDefaults.maxRows) ? userDefaults.maxRows : newDefaults.maxRows;
+                    newDefaults.postalCode = isDefined(userDefaults.postalCode) ? userDefaults.postalCode : newDefaults.postalCode;
+                    newDefaults.country = isDefined(userDefaults.country) ? userDefaults.country : newDefaults.country;
+                    newDefaults.username = isDefined(userDefaults.username) ? userDefaults.username : newDefaults.username;
+                }
+                var geonamesId = obtainEffectiveGeonamesId(defaults, scopeId);
+                defaults[geonamesId] = newDefaults;
+                return newDefaults;
+            }
+        };
+    } ]);
+})(window.angular);
+
+(function(angular) {
+    "use strict";
+    angular.module("ngGeonames").service("geonamesData", [ "$q", "$log", "geonamesHelpers", function($q, $log, geonamesHelpers) {
+        var getDefer = geonamesHelpers.getDefer, getUnresolvedDefer = geonamesHelpers.getUnresolvedDefer, setResolvedDefer = geonamesHelpers.setResolvedDefer;
+        var _private = {};
+        var self = this;
+        var upperFirst = function(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        };
+        var _privateItems = [ "geonames" ];
+        _privateItems.forEach(function(itemName) {
+            _private[itemName] = {};
+        });
+        this.unresolveGeonames = function(scopeId) {
+            var id = geonamesHelpers.obtainEffectiveGeonamesId(_private.geonames, scopeId);
+            _privateItems.forEach(function(itemName) {
+                _private[itemName][id] = undefined;
+            });
+        };
+        _privateItems.forEach(function(itemName) {
+            var name = upperFirst(itemName);
+            self["set" + name] = function(lObject, scopeId) {
+                var defer = getUnresolvedDefer(_private[itemName], scopeId);
+                defer.resolve(lObject);
+                setResolvedDefer(_private[itemName], scopeId);
+            };
+            self["get" + name] = function(scopeId) {
+                var defer = getDefer(_private[itemName], scopeId);
+                return defer.promise;
+            };
+        });
+    } ]);
+})(window.angular);
+
+(function(angular) {
+    "use strict";
+    angular.module("ngGeonames").factory("geonamesService", [ "$log", "$q", "$http", "geonamesHelpers", "geonamesDefaults", function($log, $q, $http, geonamesHelpers, geonamesDefaults) {
         var isDefined = geonamesHelpers.isDefined;
         var isString = angular.isString;
         var egal = geonamesHelpers.equals;
@@ -77,163 +234,6 @@
                 }
                 return df.promise;
             }
-        };
-    } ]);
-})(window.angular);
-
-(function(angular) {
-    "use strict";
-    angular.module("ngGeonames").service("geonamesData", [ "$q", "$log", "geonamesHelpers", function($q, $log, geonamesHelpers) {
-        var getDefer = geonamesHelpers.getDefer, getUnresolvedDefer = geonamesHelpers.getUnresolvedDefer, setResolvedDefer = geonamesHelpers.setResolvedDefer;
-        var _private = {};
-        var self = this;
-        var upperFirst = function(string) {
-            return string.charAt(0).toUpperCase() + string.slice(1);
-        };
-        var _privateItems = [ "geonames" ];
-        _privateItems.forEach(function(itemName) {
-            _private[itemName] = {};
-        });
-        this.unresolveGeonames = function(scopeId) {
-            var id = geonamesHelpers.obtainEffectiveGeonamesId(_private.geonames, scopeId);
-            _privateItems.forEach(function(itemName) {
-                _private[itemName][id] = undefined;
-            });
-        };
-        _privateItems.forEach(function(itemName) {
-            var name = upperFirst(itemName);
-            self["set" + name] = function(lObject, scopeId) {
-                var defer = getUnresolvedDefer(_private[itemName], scopeId);
-                defer.resolve(lObject);
-                setResolvedDefer(_private[itemName], scopeId);
-            };
-            self["get" + name] = function(scopeId) {
-                var defer = getDefer(_private[itemName], scopeId);
-                return defer.promise;
-            };
-        });
-    } ]);
-})(window.angular);
-
-(function(angular) {
-    "use strict";
-    angular.module("ngGeonames").factory("geonamesDefaults", [ "$q", "geonamesHelpers", function($q, geonamesHelpers) {
-        function _getDefaults() {
-            return {
-                server: "http://api.geonames.org",
-                maxRows: 50,
-                postalCode: false,
-                country: [],
-                username: "demo"
-            };
-        }
-        var isDefined = geonamesHelpers.isDefined, isObject = geonamesHelpers.isObject, obtainEffectiveGeonamesId = geonamesHelpers.obtainEffectiveGeonamesId, defaults = {};
-        return {
-            reset: function() {
-                defaults = {};
-            },
-            getDefaults: function(scopeId) {
-                var geonamesId = obtainEffectiveGeonamesId(defaults, scopeId);
-                return defaults[geonamesId];
-            },
-            getGeonamesCreationDefaults: function(scopeId) {
-                var geonamesId = obtainEffectiveGeonamesId(defaults, scopeId);
-                var d = defaults[geonamesId];
-                var geonamesDefaults = {
-                    server: d.server,
-                    maxRows: d.maxRows,
-                    postalCode: d.postalCode,
-                    country: d.country,
-                    username: d.username
-                };
-                return geonamesDefaults;
-            },
-            setDefaults: function(userDefaults, scopeId) {
-                var newDefaults = _getDefaults();
-                if (isDefined(userDefaults)) {
-                    newDefaults.server = isDefined(userDefaults.server) ? userDefaults.server : newDefaults.server;
-                    newDefaults.maxRows = isDefined(userDefaults.maxRows) ? userDefaults.maxRows : newDefaults.maxRows;
-                    newDefaults.postalCode = isDefined(userDefaults.postalCode) ? userDefaults.postalCode : newDefaults.postalCode;
-                    newDefaults.country = isDefined(userDefaults.country) ? userDefaults.country : newDefaults.country;
-                    newDefaults.username = isDefined(userDefaults.username) ? userDefaults.username : newDefaults.username;
-                }
-                var geonamesId = obtainEffectiveGeonamesId(defaults, scopeId);
-                defaults[geonamesId] = newDefaults;
-                return newDefaults;
-            }
-        };
-    } ]);
-})(window.angular);
-
-(function(angular) {
-    "use strict";
-    angular.module("ngGeonames").service("geonamesHelpers", [ "$q", "$log", "$timeout", function($q, $log, $timeout) {
-        var _errorHeader = "[ng-geonames] ";
-        var _isString = function(value) {
-            return angular.isString(value) && value !== "";
-        };
-        var _isDefined = function(value) {
-            return angular.isDefined(value) && value !== null;
-        };
-        var _isUndefined = function(value) {
-            return !_isDefined(value);
-        };
-        function _obtainEffectiveGeonamesId(d, geonamesId) {
-            var id, i;
-            if (!angular.isDefined(geonamesId)) {
-                if (Object.keys(d).length === 0) {
-                    id = "main";
-                } else if (Object.keys(d).length >= 1) {
-                    for (i in d) {
-                        if (d.hasOwnProperty(i)) {
-                            id = i;
-                        }
-                    }
-                } else {
-                    $log.error(_errorHeader + "- You have more than 1 geonames on the DOM, you must provide the geonames ID to the geonamesData.getXXX call");
-                }
-            } else {
-                id = geonamesId;
-            }
-            return id;
-        }
-        function _getUnresolvedDefer(d, geonamesId) {
-            var id = _obtainEffectiveGeonamesId(d, geonamesId), defer;
-            if (!angular.isDefined(d[id]) || d[id].resolvedDefer === true) {
-                defer = $q.defer();
-                d[id] = {
-                    defer: defer,
-                    resolvedDefer: false
-                };
-            } else {
-                defer = d[id].defer;
-            }
-            return defer;
-        }
-        return {
-            isTruthy: function(val) {
-                return val === "true" || val === true;
-            },
-            isEmpty: function(value) {
-                return Object.keys(value).length === 0;
-            },
-            isUndefinedOrEmpty: function(value) {
-                return angular.isUndefined(value) || value === null || Object.keys(value).length === 0;
-            },
-            isDefined: _isDefined,
-            isUndefined: _isUndefined,
-            isNumber: angular.isNumber,
-            isString: _isString,
-            isArray: angular.isArray,
-            isObject: angular.isObject,
-            isFunction: angular.isFunction,
-            equals: angular.equals,
-            getUnresolvedDefer: _getUnresolvedDefer,
-            setResolvedDefer: function(d, geonamesId) {
-                var id = _obtainEffectiveGeonamesId(d, geonamesId);
-                d[id].resolvedDefer = true;
-            },
-            obtainEffectiveGeonamesId: _obtainEffectiveGeonamesId
         };
     } ]);
 })(window.angular);
