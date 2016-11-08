@@ -14,7 +14,7 @@
       template: '<div class="angular-geonames"><div ng-transclude></div></div>',
       controller: function ($scope) {
         this._geonames = $q.defer();
-        this.get = function () {
+        this.getGeonames = function () {
           return this._geonames.promise;
         };
 
@@ -39,7 +39,7 @@
 
 
         scope.$on('$destroy', function () {
-          geonamesDefaults.reset();
+          geonamesDefaults.reset(attrs.id);
           geonamesData.unresolveGeonames(attrs.id);
         });
       }

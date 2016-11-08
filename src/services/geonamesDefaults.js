@@ -20,8 +20,11 @@
 
     // Get the _defaults dictionary, and override the properties defined by the user
     return {
-      reset: function () {
-        defaults = {};
+      reset: function (scopeId) {
+        var geonamesId = obtainEffectiveGeonamesId(defaults, scopeId);
+        if (geonamesId !== 'mainGeonames') {
+          delete defaults[geonamesId];
+        }
       },
       getDefaults: function (scopeId) {
         var geonamesId = obtainEffectiveGeonamesId(defaults, scopeId);

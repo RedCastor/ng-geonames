@@ -19,7 +19,7 @@
       var id, i;
       if (!angular.isDefined(geonamesId)) {
         if (Object.keys(d).length === 0) {
-          id = "main";
+          id = "mainGeonames";
         } else if (Object.keys(d).length >= 1) {
           for (i in d) {
             if (d.hasOwnProperty(i)) {

@@ -15,7 +15,7 @@
             var id, i;
             if (!angular.isDefined(geonamesId)) {
                 if (Object.keys(d).length === 0) {
-                    id = "main";
+                    id = "mainGeonames";
                 } else if (Object.keys(d).length >= 1) {
                     for (i in d) {
                         if (d.hasOwnProperty(i)) {
@@ -85,8 +85,11 @@
         }
         var isDefined = geonamesHelpers.isDefined, isObject = geonamesHelpers.isObject, obtainEffectiveGeonamesId = geonamesHelpers.obtainEffectiveGeonamesId, defaults = {};
         return {
-            reset: function() {
-                defaults = {};
+            reset: function(scopeId) {
+                var geonamesId = obtainEffectiveGeonamesId(defaults, scopeId);
+                if (geonamesId !== "mainGeonames") {
+                    delete defaults[geonamesId];
+                }
             },
             getDefaults: function(scopeId) {
                 var geonamesId = obtainEffectiveGeonamesId(defaults, scopeId);
@@ -253,7 +256,7 @@
             template: '<div class="angular-geonames"><div ng-transclude></div></div>',
             controller: [ "$scope", function($scope) {
                 this._geonames = $q.defer();
-                this.get = function() {
+                this.getGeonames = function() {
                     return this._geonames.promise;
                 };
                 this.getScope = function() {
@@ -268,7 +271,7 @@
                 ctrl._geonames.resolve(geonames);
                 geonamesData.setGeonames(geonames, attrs.id);
                 scope.$on("$destroy", function() {
-                    geonamesDefaults.reset();
+                    geonamesDefaults.reset(attrs.id);
                     geonamesData.unresolveGeonames(attrs.id);
                 });
             }
@@ -290,7 +293,7 @@
                 var geonamesScope = controller[0].getScope();
                 var geonamesController = controller[0];
                 var errorHeader = "[ng-geonames] " + " [Search] ";
-                geonamesController.get().then(function(geonames) {
+                geonamesController.getGeonames().then(function(geonames) {
                     var lastGeonamesQuery;
                     geonamesScope.$watch("search", function(search) {
                         if (scope.settingSearchFromGeonames) {

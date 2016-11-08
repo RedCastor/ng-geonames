@@ -17,7 +17,7 @@
         var geonamesController = controller[0];
         var errorHeader = '[ng-geonames] ' + ' [Search] ';
 
-        geonamesController.get().then(function (geonames) {
+        geonamesController.getGeonames().then(function (geonames) {
 
           var lastGeonamesQuery;
 
