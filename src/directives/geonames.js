@@ -1,7 +1,7 @@
 (function (angular) {
   'use strict';
 
-  angular.module('ngGeonames', []).directive('geonames', [ '$q', 'geonamesData', 'geonamesDefaults', 'geonamesHelpers', function ($q, geonamesData, geonamesDefaults, geonamesHelpers) {
+  angular.module('ngGeonames').directive('geonames', [ '$q', 'geonamesData', 'geonamesDefaults', 'geonamesHelpers', function ($q, geonamesData, geonamesDefaults, geonamesHelpers) {
     return {
       restrict: "AE",
       replace: false,
