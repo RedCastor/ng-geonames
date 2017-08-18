@@ -1,7 +1,7 @@
 (function (angular) {
   'use strict';
 
-  angular.module('ngGeonames').factory('geonamesService', [ '$log', '$q', '$http', 'geonamesHelpers', 'geonamesDefaults', function ($log, $q, $http, geonamesHelpers, geonamesDefaults) {
+  angular.module('ngGeonames').factory('geonamesService', [ '$log', '$sce', '$q', '$http', 'geonamesHelpers', 'geonamesDefaults', function ($log, $sce, $q, $http, geonamesHelpers, geonamesDefaults) {
     var isDefined = geonamesHelpers.isDefined;
     var isString = angular.isString;
     var egal = geonamesHelpers.equals;
@@ -48,13 +48,16 @@
             maxRows: max_rows,
             country: country,
             username: username,
-            callback: 'JSON_CALLBACK'
+            jsonpCallbackParam: 'callback'
           });
 
+          //Trusted url resource
+          http_query.url = $sce.trustAsResourceUrl(http_query.url);
+
           $http(http_query).then(
-            function(data) {
-              if (isDefined(data[find_key])) {
-                angular.forEach(data[find_key], function (item, key_item) {
+            function(response_success) {
+              if (isDefined(response_success.data[find_key])) {
+                angular.forEach(response_success.data[find_key], function (item, key_item) {
                   switch (find_key) {
                     case 'postalcodes':
                       if (!isDefined(item.title)){
@@ -80,17 +83,19 @@
 
                 df.resolve(find);
               } else {
-                df.reject('[Geonames] Invalid query: ' + data.status.message);
+                df.reject('[Geonames] Invalid query: ' + response_success.data.status + ' ' + response_success.data.statusText);
+                $log.warn(response_success);
               }
             },
-            function (error) {
-                df.reject('[Geonames] Request: ' +  (error.data || 'failed'));
+            function (response_error) {
+                df.reject('[Geonames] Request: ' +  ((response_error.data.status + ' ' + response_error.data.statusText) || 'failed'));
+                $log.warn(response_error);
             }
           );
         }
         else {
           df.reject('[Geonames] Invalid query params');
-          $log.error(http_query);
+          $log.warn(http_query);
         }
 
         return df.promise;
