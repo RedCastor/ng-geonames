@@ -51,37 +51,42 @@
             callback: 'JSON_CALLBACK'
           });
 
-          $http(http_query).success(function(data) {
-            if (isDefined(data[find_key])) {
-              angular.forEach(data[find_key], function (item, key_item) {
-                switch (find_key) {
-                  case 'postalcodes':
-                    if (!isDefined(item.title)){
-                      item.title = '[' + item.postalcode + '] ';
-                    }
-                    if (!isDefined(item.locationName)){
-                      item.locationName = item.countryCode + ' ' + item.placeName;
-                    }
-                    break;
-                  case 'geonames':
-                    if (!isDefined(item.title)){
-                      item.title = item.name;
-                    }
-                    if (!isDefined(item.locationName)){
-                      item.locationName = item.countryName;
-                    }
-                    break;
-                }
+          $http(http_query).then(
+            function(data) {
+              if (isDefined(data[find_key])) {
+                angular.forEach(data[find_key], function (item, key_item) {
+                  switch (find_key) {
+                    case 'postalcodes':
+                      if (!isDefined(item.title)){
+                        item.title = '[' + item.postalcode + '] ';
+                      }
+                      if (!isDefined(item.locationName)){
+                        item.locationName = item.countryCode + ' ' + item.placeName;
+                      }
+                      break;
+                    case 'geonames':
+                      if (!isDefined(item.title)){
+                        item.title = item.name;
+                      }
+                      if (!isDefined(item.locationName)){
+                        item.locationName = item.countryName;
+                      }
+                      break;
+                  }
 
-                this.push(item);
-              }, find);
+                  this.push(item);
+                }, find);
 
 
-              df.resolve(find);
-            } else {
-              df.reject('[Geonames] Invalid query: ' + data.status.message);
+                df.resolve(find);
+              } else {
+                df.reject('[Geonames] Invalid query: ' + data.status.message);
+              }
+            },
+            function (error) {
+                df.reject('[Geonames] Request: ' +  (error.data || 'failed'));
             }
-          });
+          );
         }
         else {
           df.reject('[Geonames] Invalid query params');

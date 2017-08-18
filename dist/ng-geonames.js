@@ -202,7 +202,7 @@
                         username: username,
                         callback: "JSON_CALLBACK"
                     });
-                    $http(http_query).success(function(data) {
+                    $http(http_query).then(function(data) {
                         if (isDefined(data[find_key])) {
                             angular.forEach(data[find_key], function(item, key_item) {
                                 switch (find_key) {
@@ -230,6 +230,8 @@
                         } else {
                             df.reject("[Geonames] Invalid query: " + data.status.message);
                         }
+                    }, function(error) {
+                        df.reject("[Geonames] Request: " + (error.data || "failed"));
                     });
                 } else {
                     df.reject("[Geonames] Invalid query params");
