@@ -5,14 +5,17 @@ Geonames ( http://www.geonames.org )
 Bsed on ui-leaflet directive structure ( https://github.com/angular-ui/ui-leaflet ).
 
 <h4>Installing</h4>
+
 ```
 bower install ng-geonames
 ```
+
 ```javascript
 angular('yourAngularApp',['ngGeonames']);
 ```
 
 <h4>Usage/Example</h4>
+
 ```html
 <geonames defaults="geonamesDefaults" search="geonamesSearch" >
     <ui-select data-ng-model="geonamesSearch.selected" theme="bootstrap">
